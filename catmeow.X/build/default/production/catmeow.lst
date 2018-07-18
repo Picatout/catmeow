@@ -1,0 +1,494 @@
+MPASM 5.71                       CATMEOW.ASM   7-17-2018  20:57:45         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001 ;recréation du firware du cat's meow sur PIC12F675
+                      00002 ;Auteur: Jacques Deschênes
+                      00003 ;Date: 2013-10-06
+                      00004 ;Description:
+                      00005 ;    suite à la demande de réparation d'un jouet pour chat appellé "Cat's meow",
+                      00006 ;    je constate que c'est le MCU qui est défecteux. Le marquage du MCU a été
+                      00007 ;    effacé mais je constate que l'alimentation est sur les même broches qu'un
+                      00008 ;    PIC12F6xx. J'entreprends donc de remplacer le MCU par un PIC12F675. Pour ce
+                      00009 ;    faire je dois écrire ma propre version du firmware.
+                      00010 
+                      00011     include <P12F675.INC>
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ; Build date : Nov 17 2016
+                      00005 ;  MPASM PIC12F675 processor include
+                      00006 ; 
+                      00007 ;  (c) Copyright 1999-2016 Microchip Technology, All rights reserved
+                      00008 ;==========================================================================
+                      00009 
+                      00367         LIST
+2007   3FC4           00012     __config  _WDTE_OFF & _MCLRE_OFF & _PWRTE_ON & _BODEN_ON & _FOSC_INTRCIO
+                      00013 
+                      00014     radix dec
+                      00015 
+                      00016 #define    OPTION_CFG  H'01'
+                      00017 #define    LEFT_DRV GP0
+                      00018 #define    RIGHT_DRV GP1
+                      00019 #define    PRNG_TAPS H'B4'  ;
+                      00020 #define    F_DIR 0   ; direction de la rotation
+                      00021 #define    DEAD_TIME 20 ; délais temps mort
+                      00022 #define    MIN_DLY 500 ; délais mininum durée rotation
+                      00023 
+                      00024 ;  ************ macros *******************
+                      00025 
+                      00026 
+                      00027 _left_start macro
+                      00028     bsf GPIO, LEFT_DRV
+                      00029     endm
+                      00030 
+                      00031 _right_start macro
+                      00032     bsf GPIO, RIGHT_DRV
+                      00033     endm
+                      00034 
+                      00035 _case macro n, addr
+                      00036     xorlw n
+                      00037     skpnz
+                      00038     goto addr
+                      00039     xorlw n
+                      00040     endm
+                      00041 
+                      00042 _cpyr16 macro rsrc, rdest
+                      00043     movfw rsrc
+MPASM 5.71                       CATMEOW.ASM   7-17-2018  20:57:45         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00044     movwf rdest
+                      00045     movfw rsrc+1
+                      00046     movwf rdest+1
+                      00047     endm
+                      00048 
+                      00049 _addl16 macro r16, lit16
+                      00050     movlw lit16&H'FF'
+                      00051     addwf r16,F
+                      00052     skpnc
+                      00053     incf r16+1
+                      00054     movlw (lit16>>8)&H'FF'
+                      00055     addwf r16+1,F
+                      00056     endm
+                      00057 
+                      00058 
+                      00059 ; *********  variables *************
+                      00060     cblock  H'20'
+  00000020            00061 flags : 1  ;  indicateurs booléens
+  00000021            00062 prng   : 2  ;  générateur de nombres pseudo aléatoires 16 bits
+  00000023            00063 dly_cnt : 2 ; compteur pour delay_ms
+                      00064     endc
+                      00065 
+                      00066     code
+                      00067     org 0
+0000                  00068 rst_vector
+Message[312]: Page or Bank selection not needed for this device.  No code generated.
+                      00069     pagesel init
+0000   2???           00070     goto init
+                      00071 
+                      00072     org 4
+0004                  00073 isr_vector
+0004   0009           00074     retfie
+                      00075 
+                      00076 ;;;;;;;;;  random  ;;;;;;;;;;;;;;;;
+                      00077 ;; générateur de pseudo hazard
+                      00078 ;; REF: http://en.wikipedia.org/wiki/Linear_feedback_shift_register
+0005                  00079 random
+0005   1C21           00080     btfss prng,0
+0006   2???           00081     goto rand01
+0007   30B4           00082     movlw PRNG_TAPS
+Message[305]: Using default destination of 1 (file).
+0008   06A2           00083     xorwf prng+1
+0009   1021           00084     bcf prng, 0
+000A                  00085 rand01
+000A   0C22           00086     rrf  prng+1, W
+000B   0CA1           00087     rrf  prng, F
+Message[305]: Using default destination of 1 (file).
+000C   0CA2           00088     rrf  prng+1
+000D   0008           00089     return
+                      00090 
+                      00091 
+000E                  00092 delay_ms
+000E   1283           00093     banksel TMR0
+MPASM 5.71                       CATMEOW.ASM   7-17-2018  20:57:45         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+000F   3005           00094     movlw 5
+0010   0081           00095     movwf TMR0
+0011   0801           00096     movfw TMR0
+0012   1D03           00097     skpz
+0013   2???           00098     goto $-2
+Message[305]: Using default destination of 1 (file).
+0014   0BA3           00099     decfsz dly_cnt
+0015   2???           00100     goto delay_ms+1
+0016   08A4           00101     movf dly_cnt+1,F
+0017   1903           00102     skpnz
+0018   0008           00103     return
+0019   0BA4           00104     decfsz dly_cnt+1,F
+001A   2???           00105     goto delay_ms+1
+001B   0008           00106     return
+                      00107 
+001C                  00108 stop_motor
+001C   1283           00109     banksel GPIO
+001D   0185           00110     clrf GPIO
+001E   3014           00111     movlw DEAD_TIME
+001F   00A3           00112     movwf dly_cnt
+0020   01A4           00113     clrf dly_cnt+1
+0021   2???           00114     call delay_ms
+0022   0008           00115     return
+                      00116 
+0023                  00117 motor_left
+0023   2???           00118     call stop_motor
+0024   1283           00119     banksel GPIO
+                      00120     _left_start
+0025   1405               M     bsf GPIO, LEFT_DRV
+0026   0008           00121     return
+                      00122 
+0027                  00123 motor_right
+0027   2???           00124     call stop_motor
+0028   1283           00125     banksel GPIO
+                      00126     _right_start
+0029   1485               M     bsf GPIO, RIGHT_DRV
+002A   0008           00127     return
+                      00128 
+                      00129 
+002B                  00130 init
+002B   1683           00131     banksel OSCCAL
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+002C   0090           00132     movwf OSCCAL
+                      00133 ; détection BOD et POR
+002D   1683           00134     banksel PCON
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+002E   1C8E           00135     btfss PCON, NOT_POR
+002F   2???           00136     goto power_on
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0030   180E           00137     btfsc PCON, NOT_BOR
+0031   2???           00138     goto power_on
+                      00139 ; si le moteur est bloqué le voltage tombe et produit un BOR
+                      00140 ; on inverse alors le sens de la rotation
+MPASM 5.71                       CATMEOW.ASM   7-17-2018  20:57:45         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0032   3001           00141     movlw (1<<F_DIR)
+0033   06A0           00142     xorwf flags, F
+0034   2???           00143     goto $+2
+0035                  00144 power_on
+0035   01A0           00145     clrf flags
+0036   3003           00146     movlw 3
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0037   008E           00147     movwf PCON
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0038   019F           00148     clrf ANSEL    ; désactivation des entrées A/N
+0039   3001           00149     movlw OPTION_CFG
+003A   1683           00150     banksel OPTION_REG
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+003B   0081           00151     movwf OPTION_REG
+003C   1283           00152     banksel GPIO
+003D   0185           00153     clrf GPIO
+003E   30FC           00154     movlw ~((1<<LEFT_DRV)|(1<<RIGHT_DRV))
+003F   1683           00155     banksel TRISIO
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0040   0085           00156     movwf TRISIO  ; GP0 et GP1 en sortie, les autres en entrée
+0041   3001           00157     movlw 1
+0042   00A1           00158     movwf prng
+                      00159 
+0043                  00160 main
+0043   1820           00161     btfsc flags, F_DIR
+0044   2???           00162     goto rot_left
+0045   2???           00163     call motor_right
+0046   2???           00164     goto $+2
+0047                  00165 rot_left
+0047   2???           00166     call motor_left
+0048   3001           00167     movlw (1<<F_DIR) ; Inverse l'indicateur de direction
+0049   06A0           00168     xorwf flags, F   ; pour la boucle suivante.
+004A   2???           00169     call random      ; durée la rotation au hazard.
+                      00170     _cpyr16 prng, dly_cnt
+004B   0821               M     movfw prng
+004C   00A3               M     movwf dly_cnt
+004D   0822               M     movfw prng+1
+004E   00A4               M     movwf dly_cnt+1
+                      00171     _addl16 dly_cnt, MIN_DLY
+004F   30F4               M     movlw 500&H'FF'
+0050   07A3               M     addwf dly_cnt,F
+0051   1803               M     skpnc
+Message[305]: Using default destination of 1 (file).
+0052   0AA4               M     incf dly_cnt+1
+0053   3001               M     movlw (500>>8)&H'FF'
+0054   07A4               M     addwf dly_cnt+1,F
+0055   3003           00172     movlw 3
+0056   05A4           00173     andwf dly_cnt+1,F   ; durée maximale de la rotation ~1sec.
+0057   2???           00174     call delay_ms
+0058   2???           00175     goto main
+                      00176 
+                      00177 
+3FC4                  00178     end
+MPASM 5.71                       CATMEOW.ASM   7-17-2018  20:57:45         PAGE  5
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ADCON0                            0000001F
+ADCS0                             00000004
+ADCS1                             00000005
+ADCS2                             00000006
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADON                              00000000
+ADRESH                            0000001E
+ADRESL                            0000009E
+ANS0                              00000000
+ANS1                              00000001
+ANS2                              00000002
+ANS3                              00000003
+ANSEL                             0000009F
+C                                 00000000
+CAL0                              00000002
+CAL1                              00000003
+CAL2                              00000004
+CAL3                              00000005
+CAL4                              00000006
+CAL5                              00000007
+CHS0                              00000002
+CHS1                              00000003
+CINV                              00000004
+CIS                               00000003
+CM0                               00000000
+CM1                               00000001
+CM2                               00000002
+CMCON                             00000019
+CMIE                              00000003
+CMIF                              00000003
+COUT                              00000006
+DC                                00000001
+DEAD_TIME                         20
+EEADR                             0000009B
+EECON1                            0000009C
+EECON2                            0000009D
+EEDAT                             0000009A
+EEDATA                            0000009A
+EEIE                              00000007
+EEIF                              00000007
+F                                 00000001
+FSR                               00000004
+F_DIR                             0
+GIE                               00000007
+GO                                00000001
+GO_DONE                           00000001
+GO_NOT_DONE                       00000001
+GP0                               00000000
+GP1                               00000001
+GP2                               00000002
+GP3                               00000003
+MPASM 5.71                       CATMEOW.ASM   7-17-2018  20:57:45         PAGE  6
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+GP4                               00000004
+GP5                               00000005
+GPIE                              00000003
+GPIF                              00000000
+GPIO                              00000005
+GPIO0                             00000000
+GPIO1                             00000001
+GPIO2                             00000002
+GPIO3                             00000003
+GPIO4                             00000004
+GPIO5                             00000005
+INDF                              00000000
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IOC                               00000096
+IOC0                              00000000
+IOC1                              00000001
+IOC2                              00000002
+IOC3                              00000003
+IOC4                              00000004
+IOC5                              00000005
+IOCB                              00000096
+IOCB0                             00000000
+IOCB1                             00000001
+IOCB2                             00000002
+IOCB3                             00000003
+IOCB4                             00000004
+IOCB5                             00000005
+IRP                               00000007
+LEFT_DRV                          GP0
+MIN_DLY                           500
+NOT_BOD                           00000000
+NOT_BOR                           00000000
+NOT_DONE                          00000001
+NOT_GPPU                          00000007
+NOT_PD                            00000003
+NOT_POR                           00000001
+NOT_T1SYNC                        00000002
+NOT_TO                            00000004
+OPTION_CFG                        H'01'
+OPTION_REG                        00000081
+OSCCAL                            00000090
+PCL                               00000002
+PCLATH                            0000000A
+PCON                              0000008E
+PEIE                              00000006
+PIE1                              0000008C
+PIR1                              0000000C
+PRNG_TAPS                         H'B4'
+PS0                               00000000
+PS1                               00000001
+MPASM 5.71                       CATMEOW.ASM   7-17-2018  20:57:45         PAGE  7
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PS2                               00000002
+PSA                               00000003
+RD                                00000000
+RIGHT_DRV                         GP1
+RP0                               00000005
+RP1                               00000006
+STATUS                            00000003
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0SE                              00000004
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000010
+T1IE                              00000000
+T1IF                              00000000
+T1OSCEN                           00000003
+TMR0                              00000001
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR1                              0000000E
+TMR1CS                            00000001
+TMR1GE                            00000006
+TMR1H                             0000000F
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1L                             0000000E
+TMR1ON                            00000000
+TRISIO                            00000085
+TRISIO0                           00000000
+TRISIO1                           00000001
+TRISIO2                           00000002
+TRISIO3                           00000003
+TRISIO4                           00000004
+TRISIO5                           00000005
+VCFG                              00000006
+VR0                               00000000
+VR1                               00000001
+VR2                               00000002
+VR3                               00000003
+VRCON                             00000099
+VREN                              00000007
+VRR                               00000005
+W                                 00000000
+WPU                               00000095
+WPU0                              00000000
+WPU1                              00000001
+WPU2                              00000002
+WPU4                              00000004
+WPU5                              00000005
+WR                                00000001
+WREN                              00000002
+WRERR                             00000003
+MPASM 5.71                       CATMEOW.ASM   7-17-2018  20:57:45         PAGE  8
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+Z                                 00000002
+_.org_1_0013                      00000013
+_.org_1_0034                      00000034
+_.org_1_0046                      00000046
+_BODEN_OFF                        00003FBF
+_BODEN_ON                         00003FFF
+_BOREN_OFF                        00003FBF
+_BOREN_ON                         00003FFF
+_CONFIG                           00002007
+_CPD_OFF                          00003FFF
+_CPD_ON                           00003EFF
+_CP_OFF                           00003FFF
+_CP_ON                            00003F7F
+_DEVID1                           00002006
+_EC_OSC                           00003FFB
+_EXTRC_OSC_CLKOUT                 00003FFF
+_EXTRC_OSC_NOCLKOUT               00003FFE
+_FOSC_EC                          00003FFB
+_FOSC_EXTRCCLK                    00003FFF
+_FOSC_EXTRCIO                     00003FFE
+_FOSC_HS                          00003FFA
+_FOSC_INTRCCLK                    00003FFD
+_FOSC_INTRCIO                     00003FFC
+_FOSC_LP                          00003FF8
+_FOSC_XT                          00003FF9
+_HS_OSC                           00003FFA
+_IDLOC0                           00002000
+_IDLOC1                           00002001
+_IDLOC2                           00002002
+_IDLOC3                           00002003
+_INTRC_OSC_CLKOUT                 00003FFD
+_INTRC_OSC_NOCLKOUT               00003FFC
+_LP_OSC                           00003FF8
+_MCLRE_OFF                        00003FDF
+_MCLRE_ON                         00003FFF
+_PWRTE_OFF                        00003FFF
+_PWRTE_ON                         00003FEF
+_WDTE_OFF                         00003FF7
+_WDTE_ON                          00003FFF
+_WDT_OFF                          00003FF7
+_WDT_ON                           00003FFF
+_XT_OSC                           00003FF9
+__12F675                          00000001
+_addl16                           
+_case                             
+_cpyr16                           
+_left_start                       
+_right_start                      
+delay_ms                          0000000E
+dly_cnt                           00000023
+flags                             00000020
+init                              0000002B
+isr_vector                        00000004
+MPASM 5.71                       CATMEOW.ASM   7-17-2018  20:57:45         PAGE  9
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+main                              00000043
+motor_left                        00000023
+motor_right                       00000027
+power_on                          00000035
+prng                              00000021
+rand01                            0000000A
+random                            00000005
+rot_left                          00000047
+rst_vector                        00000000
+stop_motor                        0000001C
+
+Errors   :     0
+Warnings :     0 reported,     0 suppressed
+Messages :    12 reported,     0 suppressed
+
+

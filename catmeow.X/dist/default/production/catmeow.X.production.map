@@ -1,0 +1,64 @@
+MPLINK 5.08, LINKER
+Linker Map File - Created Tue Jul 17 20:57:47 2018
+
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   0x000000    program   0x000002
+                   .cinit    romdata   0x000001    program   0x000004
+                   .org_1       code   0x000004    program   0x0000aa
+.config_2007_BUILD/DEFAULT/PRODUCTION/CATMEOW       code   0x002007    program   0x000002
+
+
+
+                              Program Memory Usage 
+                               Start         End      
+                           ---------   ---------      
+                            0x000000    0x000002      
+                            0x000004    0x000058      
+                            0x002007    0x002007      
+            89 out of 1158 program addresses used, program memory utilization is 7%
+
+
+
+                              Symbols - Sorted by Name
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+             _.org_1_0013   0x000013    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+             _.org_1_0034   0x000034    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+             _.org_1_0046   0x000046    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+                 delay_ms   0x00000e    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+                     init   0x00002b    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+               isr_vector   0x000004    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+                     main   0x000043    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+               motor_left   0x000023    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+              motor_right   0x000027    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+                 power_on   0x000035    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+                   rand01   0x00000a    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+                   random   0x000005    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+                 rot_left   0x000047    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+               rst_vector   0x000000    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+               stop_motor   0x00001c    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+
+
+
+                              Symbols - Sorted by Address
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+               rst_vector   0x000000    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+               isr_vector   0x000004    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+                   random   0x000005    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+                   rand01   0x00000a    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+                 delay_ms   0x00000e    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+             _.org_1_0013   0x000013    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+               stop_motor   0x00001c    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+               motor_left   0x000023    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+              motor_right   0x000027    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+                     init   0x00002b    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+             _.org_1_0034   0x000034    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+                 power_on   0x000035    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+                     main   0x000043    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+             _.org_1_0046   0x000046    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+                 rot_left   0x000047    program     static C:\Users\Jacques\Documents\GitHub\catmeow\catmeow.X\catmeow.asm
+
+
